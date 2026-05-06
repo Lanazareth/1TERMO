@@ -49,7 +49,6 @@
 #     print("o numero é maior que cinco")
 # else:
 #     print("o numero é menor ou igual a cinco")
-
 # melhorado
 # numero = int(input("digite um numero: "))
 # if numero < 5:
@@ -106,12 +105,10 @@
 # errado
 # pontos = 50
 # print("parabens! você fez" "+pontos" "+pontos")
-
-# corrigido
+### corrigido
 # pontos = 50
 # print(f"Parabens você fez +{pontos} +{pontos}")
-
-# melhorado 
+#### melhorado 
 # pontos = int(input("digite os seus pontos: "))
 # if pontos> 50:
 #     print(f"parabens você fez {pontos} pontos")
@@ -125,8 +122,7 @@
 #     print("aprovado")
 # elif nota >= 9:
 #     print("exelente!")
-
-# corrigido 
+#### corrigido 
 # nota = float(input("digite a sua nota: "))
 # if nota >= 7:
 #     print("aprovado!")
