@@ -45,21 +45,20 @@
 
 # corrigido
 # numero = 10
-
 # if numero > 5:
 #     print("o numero é maior que cinco")
 # else:
 #     print("o numero é menor ou igual a cinco")
 
 # melhorado
-# print("")
-# pensando...
+# numero = int(input("digite um numero: "))
+# if numero < 5:
+#     print("o numero e menor que cinco.")
+# else:
+#     print("o numero e maior ou igual a cinco.")
 
 
-
-
-
-# 4. Esquecimento Fatal
+# 4. Esquecimento Fatal5
 #errado 
 # usuario = "aluno123"
 # if usuario =="aluno123"
@@ -113,7 +112,11 @@
 # print(f"Parabens você fez +{pontos} +{pontos}")
 
 # melhorado 
-# pensando...
+# pontos = int(input("digite os seus pontos: "))
+# if pontos> 50:
+#     print(f"parabens você fez {pontos} pontos")
+# elif pontos != 50:
+#     print(f"parabens você fez {pontos} pontos")
 
 # 7 A Ordem dos Fatores
 # errado
@@ -124,7 +127,74 @@
 #     print("exelente!")
 
 # corrigido 
-# nota = 9.5 
+# nota = float(input("digite a sua nota: "))
 # if nota >= 7:
-#     print("")
-NÃO CONCLUIDO
+#     print("aprovado!")
+# elif nota >= 9:
+#     print("exelente!!")
+###melhorado
+# nota = float(input("digite a sua nota: "))
+# if nota <=5:
+#     print("reprovado!")
+# elif nota >=6:
+#     print("aprovado!!")
+# elif nota <=9:
+#     print("exelente!!!")
+# else:
+#     print("obrigado por consultar a sua nota !")
+
+# 8. O Contador de 1 a 5
+# ##errado
+# for i in range (5)
+# print(i)
+### corrigido
+# for i in range (5):
+#     print({i})
+### melhorado 
+# print("contador numerico!")
+# for i in range (1, 6):
+#     print(f"contando numero... {i}")
+
+# 9. O Loop Eterno
+###errado
+# tentativas = 1
+# while tentativas <= 3:
+    # print("tentando conectar...")
+###corrigido
+# tentativas = 1
+# while tentativas <= 3:
+#     print(f"tentativa {tentativas}: tentando conectar...")
+#     tentativas += 1
+####melhorado 
+# tentativas = 1 
+# while tentativas <= 3: 
+#     print(f"tentaviva {tentativas}: tentando conctar...")
+#     tentativas += 1
+# print("conecção instavel...")
+# print("não foi possivel conctar....")
+# print("tente novamente mais tarde.")
+
+
+# 10. A Senha Teimosa
+####errado
+# senha = ""
+# while senha == "python123":
+#     senha = input("digite a senha secreta: ")
+# print("acesso concedido! ")
+###corrigido 
+# senha = "python123"
+# senha = input("digite a sua senha: ")
+# while senha == "python123":
+#     print("acesso concedido")
+###melhorado 
+# senha = "python123"
+# senha = input("digite a sua senha para a liberação do seu acesso: ")
+# while senha == "python123":
+#     print("verificando...")
+#     print("acesso liberado!")
+
+
+
+
+
+
