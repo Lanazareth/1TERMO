@@ -1,0 +1,932 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fogo & Água: O Templo Elemental - PRO</title>
+    <style>
+        :root {
+            --fogo-cor: #ff4d00;
+            --agua-cor: #00ccff;
+            --bg-dark: #0a0a0c;
+            --panel-bg: #1a1a24;
+            --border-color: #3a3a4a;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: #e0e0e0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .game-container {
+            position: relative;
+            box-shadow: 0 0 50px rgba(0,0,0,0.8);
+            border: 4px solid var(--border-color);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        canvas {
+            display: block;
+            background-color: #121216;
+        }
+
+        .ui-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            z-index: 100;
+        }
+
+        .screen {
+            background: rgba(0, 0, 0, 0.95);
+            padding: 40px;
+            border-radius: 15px;
+            border: 3px solid var(--border-color);
+            pointer-events: all;
+            max-width: 500px;
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        h1 {
+            font-size: 3rem;
+            margin: 0 0 10px 0;
+            background: linear-gradient(90deg, var(--fogo-cor), var(--agua-cor));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-transform: uppercase;
+            letter-spacing: 5px;
+        }
+
+        p {
+            font-size: 1.3rem;
+            margin: 10px 0;
+            color: #ccc;
+        }
+
+        .btn {
+            background: #fff;
+            color: #000;
+            border: none;
+            padding: 15px 40px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: transform 0.2s, background 0.2s;
+            margin-top: 20px;
+            text-transform: uppercase;
+        }
+
+        .btn:hover {
+            transform: scale(1.1);
+            background: #ddd;
+        }
+
+        .btn:active {
+            transform: scale(0.95);
+        }
+
+        .controls-info {
+            display: flex;
+            justify-content: space-around;
+            width: 100%;
+            margin-top: 20px;
+            gap: 20px;
+        }
+
+        .control-box {
+            background: rgba(255,255,255,0.05);
+            padding: 15px;
+            border-radius: 10px;
+            flex: 1;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .fogo-txt { 
+            color: var(--fogo-cor); 
+            font-weight: bold;
+            font-size: 1.1rem;
+        }
+
+        .agua-txt { 
+            color: var(--agua-cor); 
+            font-weight: bold;
+            font-size: 1.1rem;
+        }
+
+        #hud {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            right: 10px;
+            display: flex;
+            justify-content: space-between;
+            pointer-events: none;
+            font-family: monospace;
+            font-size: 1.2rem;
+            text-shadow: 2px 2px 4px #000;
+            color: #fff;
+            z-index: 50;
+        }
+
+        .score-box {
+            background: rgba(0,0,0,0.5);
+            padding: 8px 15px;
+            border-radius: 8px;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .hidden { 
+            display: none !important; 
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .fade-in { 
+            animation: fadeIn 0.5s ease-in; 
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+        }
+
+        .pulse {
+            animation: pulse 0.3s ease-out;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="game-container">
+        <!-- CANVAS DO JOGO -->
+        <canvas id="gameCanvas" width="800" height="600"></canvas>
+        
+        <!-- HUD: Mostra fase, tempo e diamantes -->
+        <div id="hud">
+            <div class="score-box">FASE: <span id="levelNum">1</span>/5</div>
+            <div class="score-box">🔥 <span id="fireScore">0</span> 💧 <span id="waterScore">0</span></div>
+            <div class="score-box">TEMPO: <span id="gameTimer">00:00</span></div>
+        </div>
+
+        <!-- TELA DE INÍCIO -->
+        <div id="startScreen" class="ui-overlay">
+            <div class="screen fade-in">
+                <h1>Fogo & Água</h1>
+                <p>O Templo Elemental - PRO</p>
+                
+                <div class="controls-info">
+                    <div class="control-box">
+                        <div class="fogo-txt">🔥 FOGO</div>
+                        <p style="margin: 10px 0; font-size: 0.95rem;">
+                            Setas: Mover<br>
+                            Cima: Pulo Duplo<br>
+                            Coleta: 💎
+                        </p>
+                    </div>
+                    <div class="control-box">
+                        <div class="agua-txt">💧 ÁGUA</div>
+                        <p style="margin: 10px 0; font-size: 0.95rem;">
+                            W, A, D: Mover<br>
+                            W: Pulo Alto<br>
+                            Coleta: 💎
+                        </p>
+                    </div>
+                </div>
+                
+                <button class="btn" onclick="startGame()">INICIAR JOGO</button>
+            </div>
+        </div>
+
+        <!-- TELA DE FASE COMPLETA -->
+        <div id="levelCompleteScreen" class="ui-overlay hidden">
+            <div class="screen fade-in">
+                <h1 style="color: #ffff00;">FASE COMPLETA!</h1>
+                <p id="levelStats"></p>
+                <button class="btn" onclick="continuarProximaFase()">PRÓXIMA FASE</button>
+            </div>
+        </div>
+
+        <!-- TELA DE VITÓRIA -->
+        <div id="winScreen" class="ui-overlay hidden">
+            <div class="screen fade-in">
+                <h1 style="color: gold;">VITÓRIA TOTAL!</h1>
+                <p>Vocês dominaram o Templo Elemental!</p>
+                <p id="finalStats" style="font-size: 1rem; color: #aaa;"></p>
+                <button class="btn" onclick="location.reload()">JOGAR NOVAMENTE</button>
+            </div>
+        </div>
+    </div>
+
+<script>
+/**
+ * ========================================
+ * FIRE & WATER: ELEMENTAL TEMPLE - PRO
+ * Jogo de Plataforma Cooperativo Avançado
+ * ========================================
+ */
+
+// ========== CONFIGURAÇÕES GLOBAIS ==========
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+
+const TILE_SIZE = 40;
+const COLS = Math.floor(canvas.width / TILE_SIZE);
+const ROWS = Math.floor(canvas.height / TILE_SIZE);
+
+// Estados do jogo
+let gameState = 'START';
+let currentLevel = 0;
+let map = [];
+let particles = [];
+let frameCount = 0;
+let startTime = 0;
+let keys = {};
+let cameraShake = 0;
+
+// Variáveis globais dos personagens
+let fireboy = null;
+let watergirl = null;
+
+// Pontuação
+let fireScore = 0;
+let waterScore = 0;
+
+// ========== TIPOS DE TILES ==========
+// 0: Ar/Vazio
+// 1: Parede
+// 2: Porta Fogo
+// 3: Porta Água
+// 4: Lava
+// 5: Água
+// 6: Veneno
+// 7: Diamante Fogo
+// 8: Diamante Água
+// 9: Botão (ativa plataformas)
+// 10: Plataforma Móvel
+
+// ========== MAPAS DAS FASES ==========
+const LEVELS = [
+    // FASE 1: Introdução
+    [
+        [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+        [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,3,1],
+        [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1],
+        [1,0,0,0,0,0,0,0,0,0,0,1,1,1,1,0,0,0,0,1],
+        [1,0,0,0,0,0,1,1,1,0,0,0,0,0,0,0,0,0,0,1],
+        [1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+        [1,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1],
+        [1,0,7,0,0,1,1,1,0,0,0,0,0,0,0,0,0,0,0,1],
+        [1,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+        [1,1,1,1,1,0,0,0,0,1,1,1,1,0,0,1,1,1,0,1],
+        [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,8,1],
+        [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+        [1,0,0,0,1,1,1,4,4,4,1,1,5,5,5,1,1,1,1,1],
+        [1,0,0,0,1,1,1,4,4,4,1,1,5,5,5,1,1,1,1,1],
+        [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
+    ],
+    // FASE 2: Colaboração
+    [
+        [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+        [1,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,1],
+        [1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1],
+        [1,0,0,0,0,0,0,1,1,1,1,1,1,0,0,0,0,0,0,1],
+        [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+        [1,1,1,4,4,1,1,0,0,0,0,0,0,1,1,5,5,1,1,1],
+        [1,0,0,7,0,0,0,0,0,1,1,0,0,0,0,8,0,0,0,1],
+        [1,0,0,0,0,0,0,0,1,1,1,1,0,0,0,0,0,0,0,1],
+        [1,0,0,1,1,1,1,1,1,0,0,1,1,1,1,1,1,0,0,1],
+        [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+        [1,1,5,5,1,1,0,0,0,0,0,0,0,0,1,1,4,4,1,1],
+        [1,0,0,0,0,0,0,1,1,1,1,1,1,0,0,0,0,0,0,1],
+        [1,0,0,0,0,0,0,0,4,4,5,5,0,0,0,0,0,0,0,1],
+        [1,0,0,0,0,0,0,0,4,4,5,5,0,0,0,0,0,0,0,1],
+        [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
+    ],
+    // FASE 3: Desafio
+    [
+        [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+        [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+        [1,0,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,0,1],
+        [1,1,1,1,1,1,1,1,1,6,6,1,1,1,1,1,1,1,1,1],
+        [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+        [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+        [1,0,1,1,1,1,1,4,4,4,4,4,4,1,1,1,1,1,0,1],
+        [1,0,7,0,0,0,1,1,1,1,1,1,1,1,0,0,0,8,0,1],
+        [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+        [1,0,1,1,1,1,1,5,5,5,5,5,5,1,1,1,1,1,0,1],
+        [1,0,0,0,0,0,1,1,1,1,1,1,1,1,0,0,0,0,0,1],
+        [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+        [1,0,0,4,4,5,5,4,4,5,5,4,4,5,5,4,4,0,0,1],
+        [1,0,0,4,4,5,5,4,4,5,5,4,4,5,5,4,4,0,0,1],
+        [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
+    ],
+    // FASE 4: Velocidade
+    [
+        [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+        [1,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,1],
+        [1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1],
+        [1,0,0,0,1,1,0,0,0,0,0,0,0,0,1,1,0,0,0,1],
+        [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+        [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+        [1,1,1,0,0,0,0,0,4,4,5,5,0,0,0,0,0,1,1,1],
+        [1,0,0,0,0,0,0,0,4,4,5,5,0,0,0,0,0,0,0,1],
+        [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+        [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+        [1,0,7,0,0,0,0,0,0,0,0,0,0,0,0,0,0,8,0,1],
+        [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+        [1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1],
+        [1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1],
+        [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
+    ],
+    // FASE 5: O Desafio Final
+    [
+        [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+        [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+        [1,0,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,0,1],
+        [1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1],
+        [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+        [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+        [1,0,0,0,0,0,0,0,4,4,5,5,0,0,0,0,0,0,0,1],
+        [1,0,0,0,0,0,0,0,4,4,5,5,0,0,0,0,0,0,0,1],
+        [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+        [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+        [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+        [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+        [1,0,7,0,0,0,0,0,6,6,6,6,0,0,0,0,0,8,0,1],
+        [1,0,0,0,0,0,0,0,6,6,6,6,0,0,0,0,0,0,0,1],
+        [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
+    ]
+];
+
+// ========== CLASSE: PARTÍCULA ==========
+class Particle {
+    constructor(x, y, color) {
+        this.x = x;
+        this.y = y;
+        this.color = color;
+        this.size = Math.random() * 4 + 2;
+        this.vx = (Math.random() - 0.5) * 4;
+        this.vy = (Math.random() - 0.5) * 4 - 1;
+        this.life = 1.0;
+        this.decay = Math.random() * 0.05 + 0.02;
+    }
+
+    update() {
+        this.x += this.vx;
+        this.y += this.vy;
+        this.vy += 0.1;
+        this.life -= this.decay;
+    }
+
+    draw() {
+        ctx.globalAlpha = Math.max(0, this.life);
+        ctx.fillStyle = this.color;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalAlpha = 1;
+    }
+}
+
+// ========== CLASSE: DIAMANTE ==========
+class Diamond {
+    constructor(x, y, type) {
+        this.x = x;
+        this.y = y;
+        this.type = type; // 'fogo' ou 'agua'
+        this.collected = false;
+        this.rotation = 0;
+    }
+
+    update() {
+        this.rotation += 0.1;
+    }
+
+    draw() {
+        if (this.collected) return;
+        
+        ctx.save();
+        ctx.translate(this.x + TILE_SIZE/2, this.y + TILE_SIZE/2);
+        ctx.rotate(this.rotation);
+        
+        ctx.fillStyle = this.type === 'fogo' ? '#ff4d00' : '#00ccff';
+        ctx.beginPath();
+        ctx.moveTo(0, -15);
+        ctx.lineTo(15, 0);
+        ctx.lineTo(0, 15);
+        ctx.lineTo(-15, 0);
+        ctx.closePath();
+        ctx.fill();
+        
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        
+        ctx.restore();
+    }
+
+    checkCollision(player) {
+        if (this.collected) return false;
+        
+        let dx = (this.x + TILE_SIZE/2) - (player.x + player.width/2);
+        let dy = (this.y + TILE_SIZE/2) - (player.y + player.height/2);
+        let distance = Math.sqrt(dx*dx + dy*dy);
+        
+        if (distance < 25) {
+            this.collected = true;
+            createExplosion(this.x + TILE_SIZE/2, this.y + TILE_SIZE/2, 
+                          this.type === 'fogo' ? '#ffff00' : '#ffffff');
+            return true;
+        }
+        return false;
+    }
+}
+
+// ========== CLASSE: PLAYER ==========
+class Player {
+    constructor(type) {
+        this.type = type;
+        this.width = 28;
+        this.height = 38;
+        this.color = type === 'fogo' ? '#ff4d00' : '#00ccff';
+        this.speed = 4.5;
+        
+        if (type === 'fogo') {
+            this.jumpForce = -9;
+            this.maxJumps = 2;
+        } else {
+            this.jumpForce = -12;
+            this.maxJumps = 1;
+        }
+        
+        this.vy = 0;
+        this.vx = 0;
+        this.gravity = 0.5;
+        this.isGrounded = false;
+        this.doorReached = false;
+        this.jumpsLeft = this.maxJumps;
+        this.jumpKeyPressed = false;
+        
+        // Squash & Stretch
+        this.scaleX = 1;
+        this.scaleY = 1;
+        
+        this.spawn();
+    }
+
+    spawn() {
+        this.x = this.type === 'fogo' ? 60 : 120;
+        this.y = 450;
+        this.vy = 0;
+        this.vx = 0;
+        this.doorReached = false;
+        this.jumpsLeft = this.maxJumps;
+    }
+
+    update() {
+        if (this.doorReached) return;
+
+        // Movimento horizontal
+        if (this.type === 'fogo') {
+            if (keys['ArrowLeft']) {
+                this.vx = -this.speed;
+            } else if (keys['ArrowRight']) {
+                this.vx = this.speed;
+            } else {
+                this.vx *= 0.85;
+            }
+            
+            if (keys['ArrowUp'] && !this.jumpKeyPressed) {
+                if (this.jumpsLeft > 0) {
+                    this.vy = this.jumpForce;
+                    this.jumpsLeft--;
+                    this.isGrounded = false;
+                    createExplosion(this.x + this.width/2, this.y + this.height, this.color);
+                    cameraShake = 5;
+                }
+                this.jumpKeyPressed = true;
+            }
+            if (!keys['ArrowUp']) {
+                this.jumpKeyPressed = false;
+            }
+
+        } else {
+            if (keys['KeyA']) {
+                this.vx = -this.speed;
+            } else if (keys['KeyD']) {
+                this.vx = this.speed;
+            } else {
+                this.vx *= 0.85;
+            }
+
+            if (keys['KeyW'] && !this.jumpKeyPressed) {
+                if (this.isGrounded) {
+                    this.vy = this.jumpForce;
+                    this.isGrounded = false;
+                    createExplosion(this.x + this.width/2, this.y + this.height, this.color);
+                    cameraShake = 5;
+                }
+                this.jumpKeyPressed = true;
+            }
+            if (!keys['KeyW']) {
+                this.jumpKeyPressed = false;
+            }
+        }
+
+        // Squash & Stretch
+        if (this.isGrounded) {
+            this.scaleY = Math.max(0.8, this.scaleY - 0.05);
+            this.scaleX = Math.min(1.2, this.scaleX + 0.05);
+        } else {
+            this.scaleX = Math.max(1, this.scaleX - 0.05);
+            this.scaleY = Math.min(1, this.scaleY + 0.05);
+        }
+
+        // Física
+        this.x += this.vx;
+        this.checkCollisions('x');
+        
+        this.vy += this.gravity;
+        this.y += this.vy;
+        this.isGrounded = false;
+        this.checkCollisions('y');
+
+        if (this.isGrounded) {
+            this.jumpsLeft = this.maxJumps;
+            cameraShake = 3;
+        }
+
+        this.checkInteractions();
+        
+        if (Math.abs(this.vx) > 1) {
+            if (frameCount % 5 === 0) {
+                particles.push(new Particle(
+                    this.x + this.width/2, 
+                    this.y + this.height, 
+                    this.color
+                ));
+            }
+        }
+    }
+
+    checkCollisions(axis) {
+        let leftTile = Math.floor(this.x / TILE_SIZE);
+        let rightTile = Math.floor((this.x + this.width - 1) / TILE_SIZE);
+        let topTile = Math.floor(this.y / TILE_SIZE);
+        let bottomTile = Math.floor((this.y + this.height - 1) / TILE_SIZE);
+
+        for (let row = topTile; row <= bottomTile; row++) {
+            for (let col = leftTile; col <= rightTile; col++) {
+                if (row < 0 || row >= ROWS || col < 0 || col >= COLS) continue;
+                
+                if (map[row] && map[row][col] === 1) {
+                    if (axis === 'x') {
+                        if (this.vx > 0) {
+                            this.x = col * TILE_SIZE - this.width;
+                        } else if (this.vx < 0) {
+                            this.x = (col + 1) * TILE_SIZE;
+                        }
+                        this.vx = 0;
+                    } else if (axis === 'y') {
+                        if (this.vy > 0) {
+                            this.y = row * TILE_SIZE - this.height;
+                            this.isGrounded = true;
+                        } else if (this.vy < 0) {
+                            this.y = (row + 1) * TILE_SIZE;
+                        }
+                        this.vy = 0;
+                    }
+                }
+            }
+        }
+    }
+
+    checkInteractions() {
+        let centerX = Math.floor((this.x + this.width / 2) / TILE_SIZE);
+        let centerY = Math.floor((this.y + this.height / 2) / TILE_SIZE);
+        
+        if (centerY >= 0 && centerY < ROWS && centerX >= 0 && centerX < COLS) {
+            if (!map[centerY]) return;
+            let tile = map[centerY][centerX];
+            
+            if (this.type === 'fogo' && tile === 2) {
+                this.doorReached = true;
+            }
+            if (this.type === 'agua' && tile === 3) {
+                this.doorReached = true;
+            }
+
+            if (tile === 6) {
+                restartLevel();
+            }
+            if (this.type === 'fogo' && tile === 5) {
+                restartLevel();
+            }
+            if (this.type === 'agua' && tile === 4) {
+                restartLevel();
+            }
+        }
+    }
+
+    draw() {
+        if (this.doorReached) return;
+        
+        ctx.save();
+        ctx.translate(this.x + this.width/2, this.y + this.height/2);
+        ctx.scale(this.scaleX, this.scaleY);
+        ctx.translate(-(this.width/2), -(this.height/2));
+        
+        // Sombra
+        ctx.fillStyle = 'rgba(0,0,0,0.3)';
+        ctx.fillRect(4, 4, this.width, this.height);
+
+        // Corpo
+        ctx.fillStyle = this.color;
+        ctx.beginPath();
+        ctx.arc(this.width/2, 12, 12, 0, Math.PI * 2);
+        ctx.fill();
+        
+        ctx.fillRect(2, 20, this.width - 4, this.height - 22);
+
+        // Olhos
+        ctx.fillStyle = '#fff';
+        let blink = Math.sin(frameCount * 0.1) > 0.9 ? 1 : 4;
+        ctx.fillRect(6, 10, 5, blink);
+        ctx.fillRect(17, 10, 5, blink);
+
+        // Detalhe
+        if (this.type === 'fogo') {
+            ctx.fillStyle = '#ffff00';
+            ctx.beginPath();
+            ctx.moveTo(this.width/2, -5 + Math.sin(frameCount*0.2)*3);
+            ctx.lineTo(this.width/2 - 8, 5);
+            ctx.lineTo(this.width/2 + 8, 5);
+            ctx.fill();
+        } else {
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath();
+            ctx.arc(this.width/2, 5 + Math.sin(frameCount*0.2)*2, 4, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        ctx.restore();
+    }
+}
+
+// ========== VARIÁVEIS GLOBAIS ==========
+let diamonds = [];
+
+// ========== FUNÇÕES ==========
+
+function createExplosion(x, y, color) {
+    for (let i = 0; i < 10; i++) {
+        particles.push(new Particle(x, y, color));
+    }
+}
+
+function drawMap() {
+    for (let row = 0; row < ROWS; row++) {
+        for (let col = 0; col < COLS; col++) {
+            if (!map[row]) continue;
+            let tile = map[row][col];
+            let x = col * TILE_SIZE;
+            let y = row * TILE_SIZE;
+
+            if (tile === 1) {
+                let grad = ctx.createLinearGradient(x, y, x + TILE_SIZE, y + TILE_SIZE);
+                grad.addColorStop(0, '#4a4a58');
+                grad.addColorStop(1, '#2a2a35');
+                ctx.fillStyle = grad;
+                ctx.fillRect(x, y, TILE_SIZE, TILE_SIZE);
+                
+                ctx.strokeStyle = '#1a1a24';
+                ctx.lineWidth = 1;
+                ctx.strokeRect(x, y, TILE_SIZE, TILE_SIZE);
+                
+                ctx.fillStyle = 'rgba(255,255,255,0.05)';
+                ctx.fillRect(x + 2, y + 2, TILE_SIZE - 4, 2);
+            } 
+            else if (tile === 2) {
+                ctx.strokeStyle = '#ff4d00';
+                ctx.lineWidth = 3;
+                ctx.strokeRect(x + 5, y + 5, TILE_SIZE - 10, TILE_SIZE - 5);
+                ctx.fillStyle = 'rgba(255,77,0,0.2)';
+                ctx.fillRect(x + 5, y + 5, TILE_SIZE - 10, TILE_SIZE - 5);
+                ctx.fillStyle = '#ff4d00';
+                ctx.font = 'bold 20px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText('🔥', x + TILE_SIZE/2, y + 30);
+            } 
+            else if (tile === 3) {
+                ctx.strokeStyle = '#00ccff';
+                ctx.lineWidth = 3;
+                ctx.strokeRect(x + 5, y + 5, TILE_SIZE - 10, TILE_SIZE - 5);
+                ctx.fillStyle = 'rgba(0,204,255,0.2)';
+                ctx.fillRect(x + 5, y + 5, TILE_SIZE - 10, TILE_SIZE - 5);
+                ctx.fillStyle = '#00ccff';
+                ctx.font = 'bold 20px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText('💧', x + TILE_SIZE/2, y + 30);
+            } 
+            else if (tile === 4) {
+                ctx.fillStyle = '#ff2a00';
+                let wave = Math.sin(frameCount * 0.1 + col) * 3;
+                ctx.fillRect(x, y + 15 + wave, TILE_SIZE, TILE_SIZE - 15);
+                
+                if (frameCount % 10 === 0) {
+                    particles.push(new Particle(x + Math.random() * TILE_SIZE, y + 20, '#ffcc00'));
+                }
+            } 
+            else if (tile === 5) {
+                ctx.fillStyle = 'rgba(0, 102, 255, 0.7)';
+                let wave = Math.cos(frameCount * 0.1 + col) * 3;
+                ctx.fillRect(x, y + 15 + wave, TILE_SIZE, TILE_SIZE - 15);
+                
+                if (frameCount % 15 === 0) {
+                    particles.push(new Particle(x + Math.random() * TILE_SIZE, y + 20, '#ffffff'));
+                }
+            }
+            else if (tile === 6) {
+                ctx.fillStyle = '#22ff00';
+                ctx.fillRect(x, y + 10, TILE_SIZE, TILE_SIZE - 10);
+                ctx.fillStyle = '#004400';
+                ctx.beginPath();
+                ctx.arc(x + TILE_SIZE/2, y + 25 + Math.sin(frameCount*0.1)*5, 5, 0, Math.PI*2);
+                ctx.fill();
+            }
+        }
+    }
+}
+
+function loadLevel(index) {
+    if (index >= LEVELS.length) {
+        gameState = 'WIN';
+        let elapsed = Math.floor((Date.now() - startTime) / 1000);
+        let mins = Math.floor(elapsed / 60).toString().padStart(2, '0');
+        let secs = (elapsed % 60).toString().padStart(2, '0');
+        document.getElementById('finalStats').innerText = 
+            `Tempo total: ${mins}:${secs}<br>Diamantes Fogo: ${fireScore}<br>Diamantes Água: ${waterScore}`;
+        document.getElementById('winScreen').classList.remove('hidden');
+        return;
+    }
+    
+    currentLevel = index;
+    document.getElementById('levelNum').innerText = currentLevel + 1;
+    map = LEVELS[index].map(row => [...row]);
+    fireboy = new Player('fogo');
+    watergirl = new Player('agua');
+    particles = [];
+    diamonds = [];
+    
+    // Carrega diamantes
+    for (let row = 0; row < ROWS; row++) {
+        for (let col = 0; col < COLS; col++) {
+            if (map[row][col] === 7) {
+                diamonds.push(new Diamond(col * TILE_SIZE, row * TILE_SIZE, 'fogo'));
+                map[row][col] = 0;
+            } else if (map[row][col] === 8) {
+                diamonds.push(new Diamond(col * TILE_SIZE, row * TILE_SIZE, 'agua'));
+                map[row][col] = 0;
+            }
+        }
+    }
+    
+    createExplosion(60, 450, '#ff4d00');
+    createExplosion(120, 450, '#00ccff');
+}
+
+function restartLevel() {
+    if (fireboy && watergirl) {
+        createExplosion(fireboy.x, fireboy.y, fireboy.color);
+        createExplosion(watergirl.x, watergirl.y, watergirl.color);
+    }
+    setTimeout(() => loadLevel(currentLevel), 300);
+}
+
+function continuarProximaFase() {
+    document.getElementById('levelCompleteScreen').classList.add('hidden');
+    loadLevel(currentLevel + 1);
+}
+
+function updateTimer() {
+    if (gameState !== 'PLAYING') return;
+    let elapsed = Math.floor((Date.now() - startTime) / 1000);
+    let mins = Math.floor(elapsed / 60).toString().padStart(2, '0');
+    let secs = (elapsed % 60).toString().padStart(2, '0');
+    document.getElementById('gameTimer').innerText = `${mins}:${secs}`;
+}
+
+function gameLoop() {
+    frameCount++;
+    
+    // Aplicar camera shake
+    let shakeX = (Math.random() - 0.5) * cameraShake;
+    let shakeY = (Math.random() - 0.5) * cameraShake;
+    cameraShake *= 0.9;
+    
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.save();
+    ctx.translate(shakeX, shakeY);
+
+    if (gameState === 'PLAYING' && fireboy && watergirl) {
+        fireboy.update();
+        watergirl.update();
+        updateTimer();
+
+        // Colisão com diamantes
+        for (let diamond of diamonds) {
+            if (diamond.checkCollision(fireboy)) {
+                fireScore++;
+                document.getElementById('fireScore').innerText = fireScore;
+            }
+            if (diamond.checkCollision(watergirl)) {
+                waterScore++;
+                document.getElementById('waterScore').innerText = waterScore;
+            }
+        }
+
+        if (fireboy.doorReached && watergirl.doorReached) {
+            gameState = 'LEVEL_COMPLETE';
+            document.getElementById('levelStats').innerText = 
+                `Fase ${currentLevel + 1} Concluída!<br>Diamantes: 🔥 ${fireScore} 💧 ${waterScore}`;
+            document.getElementById('levelCompleteScreen').classList.remove('hidden');
+        }
+    }
+
+    drawMap();
+    
+    // Desenha diamantes
+    for (let diamond of diamonds) {
+        diamond.update();
+        diamond.draw();
+    }
+    
+    // Partículas
+    for (let i = particles.length - 1; i >= 0; i--) {
+        particles[i].update();
+        particles[i].draw();
+        if (particles[i].life <= 0) {
+            particles.splice(i, 1);
+        }
+    }
+
+    if (fireboy) fireboy.draw();
+    if (watergirl) watergirl.draw();
+
+    ctx.restore();
+    requestAnimationFrame(gameLoop);
+}
+
+function startGame() {
+    document.getElementById('startScreen').classList.add('hidden');
+    gameState = 'PLAYING';
+    startTime = Date.now();
+    fireScore = 0;
+    waterScore = 0;
+    document.getElementById('fireScore').innerText = '0';
+    document.getElementById('waterScore').innerText = '0';
+    loadLevel(0);
+}
+
+// ========== EVENT LISTENERS ==========
+window.addEventListener('keydown', e => {
+    keys[e.code] = true;
+});
+
+window.addEventListener('keyup', e => {
+    keys[e.code] = false;
+});
+
+// ========== INICIALIZAÇÃO ==========
+gameLoop();
+
+</script>
+</body>
+</html>
